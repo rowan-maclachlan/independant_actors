@@ -5,6 +5,7 @@ import params as pa
 
 import time as t
 import random as r
+import numpy as np
 
 """
 These are the 9 offsets on the surface which represent
@@ -37,13 +38,32 @@ class Surface:
         self.total_alive = 0
         self.total_dead = 0
         self._all_cells = set()
+        self.ID = 0
 
         self._map = []
-            for i in range(height):
-                self._map.append([ None ] * width)
+        for i in range(height):
+            self._map.append([ None ] * width)
 
-    def get_all_living_actors(self):
+    def tick(self):
+        active_actors = self.get_active_actors()
+        for actor in active_actors:
+            print("actor!")
+
+    def get_active_actors(self):
         """
+        Retrieve the list of which actors will
+        be active for this iteration.
+        :return: A random sample of actors from all actors.
+        :rtype: list(Actor)
+        """
+        num_active_actors = pa.params['actors_per_iter']
+        all_actors = self.get_all_actors()
+        active_actors = np.random.choice(all_actors, num_active_actors, replace=False)
+        return active_actors
+
+    def get_all_actors(self):
+        """
+        Retrieve all actors in this simulation.
         """
         living_actors = list()
         for y in range(self.height):
@@ -73,10 +93,10 @@ class Surface:
         :param method: The function to apply to all living Actors.
         :type method: function
         """
-        for column in self.map:
-            for c in column:
-                if c is not None:
-                    method(c)
+        for column in self._map:
+            for a in column:
+                if a is not None:
+                    method(a)
 
     def get_neighbours(self, actor):
         """
@@ -112,16 +132,12 @@ class Surface:
                 if a is None:
                     out += "     "
                 else:
-                    out += c.draw() + " "
+                    out += a.draw() + " "
             out += "|\n"
         out += "*"
         for x in range(self.width):
             out += "-----"
         out += "*\n"
-        out += " | population: "    + str(self.population) \
-                + " | born: "       + str(self.total_alive) \
-                + " | died: "       + str(self.total_dead)
-
         return out
 
 if __name__ == "__main__":
@@ -130,33 +146,27 @@ if __name__ == "__main__":
     from os import path
     from time import strftime
 
-    if len(sys.argv) == 2:
-        file_start = path.splitext(path.basename(sys.argv[1]))[0]
-        p.init(sys.argv[1])
-    else:
-        file_start = 'default'
-        p.init(None)
-
-    surface_w = p.params['surface']['width']
-    surface_h = p.params['surface']['height']
-    gens = p.params['generations']
+    surface_w = pa.params['width']
+    surface_h = pa.params['height']
+    gens = pa.params['iterations']
 
     surface = Surface(surface_w, surface_h)
 
     for i in range(surface_w * surface_h):
-        c_init = Cell(surface.ID, Position(i // surface_w, i % surface_h))
+        new_pos = Position(i // surface_w, i % surface_h)
+        new_actor = Actor(surface.ID, new_pos)
         surface.ID += 1
         surface.population += 1
-        surface.set(c_init.get_position(), c_init)
+        surface.set(new_pos, new_actor)
     
     sim_stats = list()
     
-    # add initial state
-    stat = s.get_stats(surface)
-    sim_stats.append(stat)
+    for i in range(pa.params['iterations']):
+        surface.tick()
 
-    with open("data.json", "w+") as out:
-        json.dump(sim_stats, out, indent=4)
-
-    s.output_plot("plot.html", sim_stats)
+    
+#    with open("data.json", "w+") as out:
+#        json.dump(sim_stats, out, indent=4)
+#
+#    s.output_plot("plot.html", sim_stats)
 

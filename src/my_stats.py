@@ -8,8 +8,7 @@ scatter plots with this data from module plotly.
 """
 import Surface
 import Actor as ac
-import Gene as ge
-import statistics as st
+#import statistics as st
 
 def get_stats(surface):
     """
